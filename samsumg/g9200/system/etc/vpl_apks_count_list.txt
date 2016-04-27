@@ -1,0 +1,11 @@
+/system/preload/Alipay_V9.0_Deletable/Alipay_V9.0_Deletable.apk
+/system/preload/WeChat_V6.0_Deletable/WeChat_V6.0_Deletable.apk
+/system/preload/Sinamicroblog_V5.0_Deletable/Sinamicroblog_V5.0_Deletable.apk
+/system/preload/BaiduMap_V8.0_Deletable/BaiduMap_V8.0_Deletable.apk
+/system/preload/Taobao_V5.0_Deletable/Taobao_V5.0_Deletable.apk
+/system/preload/SReading_V4.0_Deletable/SReading_V4.0_Deletable.apk
+/system/preload/SamsungCloudAli/SamsungCloudAli.apk
+/system/preload/GalaxyCare_CHN_Deletable/GalaxyCare_CHN_Deletable.apk
+/system/preload/SecMemo3/SecMemo3.apk
+/system/preload/VoiceNote_4.0/VoiceNote_4.0.apk
+/system/preload/SecCalculator_M/SecCalculator_M.apk

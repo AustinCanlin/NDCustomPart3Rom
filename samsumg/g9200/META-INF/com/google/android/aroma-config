@@ -1,0 +1,473 @@
+﻿##############ROM信息#############
+ini_set("rom_name",      "EDU ROM S6 G9200 v1.0");
+ini_set("rom_version",   "G9200ZCU2DPC1");
+ini_set("rom_author",    "yancanlin");
+ini_set("rom_device",    "Galaxy S6 G9200");
+ini_set("rom_date",      "2016/4/10");
+
+
+###########加载字体###############
+	loadlang("langs/cn.lang");
+	fontresload( "0", "ttf/DroidSansFallback.ttf;ttf/DroidSans.ttf", "10" ); 
+	fontresload( "1", "ttf/DroidSansFallback.ttf;ttf/DroidSans.ttf", "16" );
+	
+############手动置主题############
+theme("touchwiz");
+
+############欢迎页面##############
+viewbox(
+	"<~welcome.title>",
+	"<~welcome.text1> <b>"+
+	ini_get("rom_name")+
+	"</b> \n\n"+
+	"<~welcome.text2>\n\n"+
+	"  <~welcome.version>\t: <b><#selectbg_g>"+ini_get("rom_version")+"</#></b>\n"+
+	"  <~welcome.aversion>\t: <b><#selectbg_g>"+"6.0.1</#></b>\n"+
+	"  <~welcome.codename>\t: <b><#selectbg_g>"+ini_get("rom_author")+"</#></b>\n"+
+	"  <~welcome.updated>\t: <b><#selectbg_g>"+ini_get("rom_date")+"</#></b>\n"+
+	"\n"+	
+    "<b><#F00>此刷机包只适合 Galaxy S6 G9200<b></#>\t <b><#selectbg_g>"+ini_get("cach")+"</#></b>\n"+
+	"\n"+	
+	"<~welcome.next>",
+	"@welcome"
+);
+
+menubox(
+	"选择安装模式",
+	"选择最适合您的方式安装",
+	"@install",
+	"type.prop",
+	"01_三星原生",    "安装三星android6.0.1系统(推荐)",                              					 	     "@type1",
+	"02_原生精简",    "按最精简的选项快速安装ROM。",                         	  "@type2",
+	"03_EDU定制",     "根据选项进行EDU定制化安装ROM。",                         	  "@type3"
+);
+
+#########################################################################################################
+##-------1.三星原生开始###
+if (prop("type.prop","selected")=="1") then
+writetmpfile(
+	"DeleteApp.prop",   #2可删除的APP
+	"item.1.1=0\n"+       #01_Samsungservice
+	"item.1.2=0\n"+       #02_sCloud
+	"item.1.3=0\n"+       #03_SamsungApps
+	"item.1.4=0\n"+       #04_SmartAssistant
+	"item.1.5=0\n"+       #05_Easysetting
+	"item.1.6=0\n"+       #06_SHealth
+	"item.1.7=0\n"+       #07_SVoicec
+	"item.1.8=0\n"+      #08_GameHome
+	"item.1.9=0\n"+      #09_AllShare	
+	"item.1.10=0\n" +      #10_Microsoft
+	"item.1.11=0\n"+      #10_StkUim
+	"item.1.12=0\n"+      #10_DigitalClock
+	"item.1.13=0\n"+       #13_MobilePrint		
+	"item.1.14=0\n"+       #14_GearManager	
+	"item.1.15=0\n"+       #18_SamsungCloudAli
+	"item.1.16=0\n"+       #16_CarmodeStub	
+	"item.1.17=0\n"+        #17_SecMemo2	
+	"item.1.18=0\n"+       #18_SmartRemoteStub_zero
+	"item.1.19=0\n"+      #19_AntHalService
+	"item.1.20=0\n"+       #20_SecEmail
+	"item.1.21=0\n" +      #21_VRSetupWizardStub
+	"item.1.22=0\n"       #22_GalaxyCare_CHN_Deletable
+);
+
+writetmpfile(
+	"Deletelite.prop",        #2精简模式再精简
+	"item.1.1=0\n" +         #Samsungservice2
+	"item.1.2=0\n" +         #GalaxyApps_3xh
+	"item.1.3=0\n" +         #ThemeCenter
+	"item.1.4=0\n" +         #SmartManager
+	"item.1.5=0\n" +         #HealthService
+	"item.1.6=0\n" +         #AirMessage
+	"item.1.7=0\n" +           #myfile
+	"item.1.8=0\n"            #深度精简
+);
+
+writetmpfile(
+	"OptionalApp.prop",   #3可选APP
+	"item.1.1=0\n"+       #01_rootexplorer
+	"item.1.2=0\n"+       #02_TitaniumBackup
+	"item.1.3=0\n" +       #03_Font
+	"item.1.4=0\n"         #05_shadowsocks
+);
+
+writetmpfile(
+	"EDUOptionalApp.prop",   #4选择EDU安装APP
+	"item.1.1=0\n"+       #01_rootexplorer
+	"item.1.2=0\n"+       #02_TitaniumBackup
+	"item.1.3=0\n" +       #03_Font
+	"item.1.4=0\n" +        #05_shadowsocks
+	"item.1.5=0\n"+       #01_rootexplorer
+	"item.1.6=0\n"+       #02_TitaniumBackup
+	"item.1.7=0\n" +       #03_Font
+	"item.1.8=0\n"         #05_shadowsocks
+);
+
+
+writetmpfile(
+	"simlogo.prop",        #5simlogo
+	"selected.1=5\n"      #1,2,3,4,5 
+);
+
+writetmpfile(
+	"Delete.prop",         #2精简模式项目
+	"item.1.1=0\n"       #0不精简，1精简
+);
+
+
+
+writetmpfile(
+	"Wipe.prop",        #1wipe
+	"selected.1=1\n"      #1=wipe，2=all，3=no 
+);
+
+selectbox(
+	"一，删除用户数据",
+	"请根据自己的情况来选择。",
+	"icons/apps",
+	"Wipe.prop",
+	"是否删除用户数据（恢复出厂，双清）","",2, 
+	"删除用户数据（推荐）",                      "将会删除已经安装过的程序，联系人，短信等用户数据，内置卡的数据不会丢失",                     0,
+	"删除用户数据（包括内置储存）",       "将会删除已经安装过的程序，联系人，短信等用户数据，包括内置储存的数据也会清空",             0,
+	"保留数据，不删除",                               "将保留现在的所有数据",                      																		                 1
+);
+	
+endif;
+##-------1.三星原生结束###
+
+#########################################################################################################
+##-------2.原生精简开始###
+if (prop("type.prop","selected")=="2") then
+
+writetmpfile(
+	"DeleteApp.prop",   #2可删除的APP
+	"item.1.1=1\n"+       #01_Samsungservice
+	"item.1.2=1\n"+       #02_sCloud
+	"item.1.3=1\n"+       #03_SamsungApps
+	"item.1.4=1\n"+       #04_SmartAssistant
+	"item.1.5=1\n"+       #05_Easysetting
+	"item.1.6=1\n"+       #06_SHealth
+	"item.1.7=1\n"+       #07_SVoicec
+	"item.1.8=1\n"+      #08_GameHome
+	"item.1.9=1\n"+      #09_AllShare	
+	"item.1.10=1\n" +      #10_Microsoft
+	"item.1.11=1\n"+      #10_StkUim
+	"item.1.12=1\n"+      #10_DigitalClock
+	"item.1.13=1\n"+       #13_MobilePrint		
+	"item.1.14=1\n"+       #14_GearManager	
+	"item.1.15=1\n"+       #18_SamsungCloudAli
+	"item.1.16=1\n"+       #16_CarmodeStub	
+	"item.1.17=1\n"+        #17_SecMemo2	
+	"item.1.18=1\n"+       #18_SmartRemoteStub_zero
+	"item.1.19=1\n"+      #19_AntHalService
+	"item.1.20=1\n"+       #20_SecEmail
+	"item.1.21=1\n" +      #21_VRSetupWizardStub
+	"item.1.22=1\n"       #22_GalaxyCare_CHN_Deletable
+);
+
+writetmpfile(
+	"simlogo.prop",        #5simlogo
+	"selected.1=5\n"      #1,2,3,4,5 
+);
+
+writetmpfile(
+	"Delete.prop",         #2精简模式项目
+	"item.1.1=1\n"       #0不精简，1精简
+);
+
+writetmpfile(
+	"Deletelite.prop",        #2精简模式再精简
+	"item.1.1=0\n" +         #Samsungservice2
+	"item.1.2=0\n" +         #GalaxyApps_3xh
+	"item.1.3=0\n" +         #ThemeCenter
+	"item.1.4=0\n" +         #SmartManager
+	"item.1.5=0\n" +         #HealthService
+	"item.1.6=0\n" +         #AirMessage
+	"item.1.7=0\n"            #myfile
+);
+writetmpfile(
+	"OptionalApp.prop",   #3可选APP
+	"item.1.1=0\n"+       #01_rootexplorer
+	"item.1.2=0\n"+       #02_TitaniumBackup
+	"item.1.3=0\n" +       #03_Font
+	"item.1.4=0\n"         #05_shadowsocks
+);
+
+writetmpfile(
+	"EDUOptionalApp.prop",   #4选择EDU安装APP
+	"item.1.1=0\n"+       #01_rootexplorer
+	"item.1.2=0\n"+       #02_TitaniumBackup
+	"item.1.3=0\n" +       #03_Font
+	"item.1.4=0\n" +        #05_shadowsocks
+	"item.1.5=0\n"+       #01_rootexplorer
+	"item.1.6=0\n"+       #02_TitaniumBackup
+	"item.1.7=0\n" +       #03_Font
+	"item.1.8=0\n"         #05_shadowsocks
+);
+
+
+writetmpfile(
+	"simlogo.prop",        #5simlogo
+	"selected.1=5\n"      #1,2,3,4,5 
+);
+
+writetmpfile(
+	"Wipe.prop",        #1wipe
+	"selected.1=1\n"       #1=wipe，2=all，3=no 
+);
+
+checkbox(
+	"一，精简自选程序",
+	"请选择需要删除的程序。",
+	"icons/apps",
+	"DeleteApp.prop",
+	"以下程序不需要的就打钩，打钩表示即将删除的程序！","",2, 
+	"01_删除三星 账号",                       "三星账号和三星服务，使用三星必备",                  	                                                                                     0,	
+	"02_删除三星 云同步",                  "三星云同步组件,同步联系人，日历，互联网",            	  	                                                                             0,
+	"03_删除三星 程序商店",               "三星SamsungApps应用程序商店,下载游戏，程序",                                                                                      0,	
+	"04_删除三星 智能助手",              "三星5.0的智能助手，卡片提醒服务",                                                                                                              0, 	
+	"05_删除三星 简易模式",              "三星自带的简易模式，太难看一般不用",                                                                                                         0,	
+	"06_删除三星 S健康",                    "三星自带的健康软件",                               			 			                                                                               0,	
+	"07_删除三星 S 语音",                   "三星自带的语音控制程序",            									                                                                                0,	
+	"08_删除三星 游戏启动器",         "三星S7的游戏启动器",                                                                                                                    0,	
+	"09_删除三星 智能共享",                 "三星自带的查看附近设备共享软件",                 					                                                                             0,	
+	"10_删除三星 微软办公软件",      "最新自带的微软办公4件套",                                                                                   0,	
+	"11_删除三星 SIM卡工具",             "三星自带的SIM卡，UIM卡工具",                      				                                                                                 0,		
+	"12_删除三星 桌面时钟插件",        "三星自带的桌面双时钟，模拟时钟插件",            		                                                                                     0,	
+	"13_删除三星 移动打印服务",        "三星自带的移动打印服务软件",                     				                                                                                 0,
+	"14_删除三星 手表GearManager",             "三星手表连接助手GearManager",                     				                                                                                0,
+	"15_删除三星 云",                            "三星自带的三星云软件",                     				                                                                                                 0,
+	"16_删除三星 汽车模式",                         "三星自带的汽车模式",                     				                                                                                             0,
+	"17_删除三星 备忘录",                   "三星自带的三星备忘录软件",                     				                                                                                           0,
+	"18_删除三星 智能遥控器",            "三星自带的智能遥控器软件",                     				                                                                                            0,
+	"19_删除三星 ANT HAL Service",            "ANT HAL Service是ANT（无线服务）软件的一个无线服务的插件，它可以拓展一些无线接口。",        0,
+	"20_删除三星 电子邮件",            "自带的电子邮件，如果不需要可以删除，用其他的邮件就行",                     				                                           0,
+	"21_删除三星 VR眼镜",            "三星VR眼镜相关服务,有这个东西的人很少",                     				                                            0,
+	"21_删除三星 盖乐世空间",            "三星盖乐世空间程序，寻找三星售后服务",                     				                                            0
+);
+selectbox(
+	"二，删除用户数据",
+	"请根据自己的情况来选择。",
+	"icons/apps",
+	"Wipe.prop",
+	"是否删除用户数据（恢复出厂，双清）","",2, 
+	"删除用户数据（推荐）",                      "将会删除已经安装过的程序，联系人，短信等用户数据，内置卡的数据不会丢失",                     0,
+	"删除用户数据（包括内置储存）",       "将会删除已经安装过的程序，联系人，短信等用户数据，包括内置储存的数据也会清空",             0,
+	"保留数据，不删除",                               "将保留现在的所有数据",                      																		                 1
+);
+
+endif;
+
+
+##-------2.原生精简结束###
+
+
+#########################################################################################################
+##-------3.EDU定制开始###-------------###-------------###-------------###-------------###-------------
+if (prop("type.prop","selected")=="3") then
+
+writetmpfile(
+	"DeleteApp.prop",   #1精简自选程序
+	"item.1.1=1\n"+       #01_Samsungservice
+	"item.1.2=1\n"+       #02_sCloud
+	"item.1.3=1\n"+       #03_SamsungApps
+	"item.1.4=1\n"+       #04_SmartAssistant
+	"item.1.5=1\n"+       #05_Easymode
+	"item.1.6=1\n"+       #06_SHealth
+	"item.1.7=1\n"+       #07_SVoicec
+	"item.1.8=1\n"+      #08_GameHome
+	"item.1.9=1\n"+      #09_AllShare	
+	"item.1.10=1\n"+      #10_Micorsoft
+	"item.1.11=1\n"+      #11_StkUim
+	"item.1.12=1\n"+      #12_DigitalClock
+	"item.1.13=1\n"+       #13_MobilePrint		
+	"item.1.14=1\n"+       #14_GearManager	
+	"item.1.15=1\n"+       #15_SamsungCloudAli
+	"item.1.16=1\n"+       #16_CarmodeStub	
+	"item.1.17=1\n"+        #17_SecMemo2	
+	"item.1.18=1\n"+       #18_SmartRemoteStub_zero
+	"item.1.19=1\n"+      #19_AntHalService
+	"item.1.20=1\n"+       #20_SecEmail
+	"item.1.21=1\n" +      #21_VRSetupWizardStub
+	"item.1.22=1\n"       #22_GalaxyCare_CHN_Deletable
+);
+
+writetmpfile(
+	"Deletelite.prop",        #2精简模式再精简
+	"item.1.1=1\n" +         #Samsungservice2
+	"item.1.2=1\n" +         #GalaxyApps_3xh
+	"item.1.3=1\n" +         #ThemeCenter
+	"item.1.4=1\n" +         #SmartManager
+	"item.1.5=1\n" +         #HealthService
+	"item.1.6=1\n" +         #AirMessage
+	"item.1.7=1\n" +           #myfile
+	"item.1.8=1\n"            #深度精简
+);
+
+writetmpfile(
+	"OptionalApp.prop",   #3可选APP
+	"item.1.1=0\n"+       #01_rootexplorer
+	"item.1.2=0\n"+       #02_TitaniumBackup
+	"item.1.3=0\n" +       #03_Font
+	"item.1.4=0\n"         #05_shadowsocks
+);
+
+writetmpfile(
+	"EDUOptionalApp.prop",   #4选择EDU安装APP
+	"item.1.1=0\n"+       #01_xposed模块
+	"item.1.2=0\n"+       #02_定制开关机动画
+	"item.1.3=0\n" +       #03_定制开屏图片
+	"item.1.4=1\n" +        #04_安装101桌面
+	"item.1.5=1\n"+       #05_ND智能相机
+	"item.1.6=1\n"+       #06_NDSSDK
+	"item.1.7=0\n" +       #07_NDUpdater
+	"item.1.8=0\n"         #08_test
+);
+
+
+writetmpfile(
+	"simlogo.prop",        #5simlogo
+	"selected.1=5\n"      #1,2,3,4,5 
+);
+
+writetmpfile(
+	"Delete.prop",         #2精简模式项目
+	"item.1.1=1\n"       #0不精简，1精简
+);
+
+
+
+writetmpfile(
+	"Wipe.prop",        #1wipe
+	"selected.1=1\n"      #1=wipe，2=all，3=no 
+);
+
+checkbox(
+	"一，精简自选程序",
+	"请选择需要删除的程序。",
+	"icons/apps",
+	"DeleteApp.prop",
+	"以下程序不需要的就打钩，打钩表示即将删除的程序！","",2, 
+	"01_删除三星 账号",                       "三星账号和三星服务，使用三星必备",                  	                                                                                     0,	
+	"02_删除三星 云同步",                  "三星云同步组件,同步联系人，日历，互联网",            	  	                                                                             0,
+	"03_删除三星 程序商店",               "三星SamsungApps应用程序商店,下载游戏，程序",                                                                                      0,	
+	"04_删除三星 智能助手",              "三星5.0的智能助手，卡片提醒服务",                                                                                                              0, 	
+	"05_删除三星 简易模式",              "三星自带的简易模式，太难看一般不用",                                                                                                         0,	
+	"06_删除三星 S健康",                    "三星自带的健康软件",                               			 			                                                                               0,	
+	"07_删除三星 S 语音",                   "三星自带的语音控制程序",            									                                                                                0,	
+	"08_删除三星 游戏启动器",         "三星S7的游戏启动器",                                                                                                                    0,	
+	"09_删除三星 智能共享",                 "三星自带的查看附近设备共享软件",                 					                                                                             0,	
+	"10_删除三星 微软办公软件",      "最新自带的微软办公4件套",                                                                                   0,	
+	"11_删除三星 SIM卡工具",             "三星自带的SIM卡，UIM卡工具",                      				                                                                                 0,		
+	"12_删除三星 桌面时钟插件",        "三星自带的桌面双时钟，模拟时钟插件",            		                                                                                     0,	
+	"13_删除三星 移动打印服务",        "三星自带的移动打印服务软件",                     				                                                                                 0,
+	"14_删除三星 手表GearManager",             "三星手表连接助手GearManager",                     				                                                                                0,
+	"15_删除三星 云",                            "三星自带的三星云软件",                     				                                                                                                 0,
+	"16_删除三星 汽车模式",                         "三星自带的汽车模式",                     				                                                                                             0,
+	"17_删除三星 备忘录",                   "三星自带的三星备忘录软件",                     				                                                                                           0,
+	"18_删除三星 智能遥控器",            "三星自带的智能遥控器软件",                     				                                                                                            0,
+	"19_删除三星 ANT HAL Service",            "ANT HAL Service是ANT（无线服务）软件的一个无线服务的插件，它可以拓展一些无线接口。",        0,
+	"20_删除三星 电子邮件",            "自带的电子邮件，如果不需要可以删除，用其他的邮件就行",                     				                                           0,
+	"21_删除三星 VR眼镜",            "三星VR眼镜相关服务,有这个东西的人很少",                     				                                            0,
+	"21_删除三星 盖乐世空间",            "三星盖乐世空间程序，寻找三星售后服务",                     				                                            0
+);
+
+checkbox(
+	"二，是否继续删除一些程序？",
+	"请选择需要删除的程序。",
+	"icons/apps",
+	"Deletelite.prop",
+	"以下程序不需要的就打钩，打钩表示即将删除的程序！","",2, 
+	"删除三星账号",                          "将删除三星账号，如果你要使用主题和三星刷商店，请保留此程序和三星账号！",                  	         0,
+	"删除三星刷商店",                       "将删除三星商店，如果你要使用下载相机的额外模式，请保留此程序和三星账号！",                        0,
+	"删除三星主题商店",                   "将删除三星主题商店，如果你要使用主题下载，请保留此程序和三星账号！",                  	             0,
+	"删除智能管理器",                       "将删除三星智能管理器，，如果需要请不要打钩！",                  	                                                     0,
+	"删除S健康",                                "将删除S健康程序，如果需要请不要打钩！",                  	                                                                 0,
+	"删除浮动信息",                           "将删除浮动信息，如果需要请不要打钩！",                  	                                                                     0,
+	"删除文件管理",                           "将删除文件管理，如果需要请不要打钩！",                  	                                                                     0,
+	"深度精简",                           "深度精简，只保留设置和UI！",                  	                                                                     0
+);
+checkbox(
+	"三，可选应用程序",
+	"请选择需要新安装的程序。",
+	"icons/apps",
+	"OptionalApp.prop",
+	"如果需要请打钩需要的程序即可。","",2,
+	"01_RE管理器",                "强大的ROOT管理器，可以删除系统文件",                                                 0,
+	"02_钛备份",                   "功能强大的数据备份恢复软件",                                          		                    0,
+	"03_字体",                      "几种我搜集的字体（，雅黑，浪漫雅园，萍方字体，俏皮，雅丽，综艺，雅兰）",                                0,
+	"04_shadowsocks",        "shadowsocks是一款免费的科学上网工具",                                               0
+);
+
+checkbox(
+	"四，可选应用程序",
+	"请选择需要定制的程序。",
+	"icons/apps",
+	"EDUOptionalApp.prop",
+	"如果需要请打钩需要的程序即可。","",2,
+	"01_xposed模块",                "包括xposed框架、安装器、模块",                                                 0,
+	"02_定制开关机动画",                   "更改开关机动画",                                          		                    0,
+	"03_定制开屏图片",                      "定制开屏图片",                                0,
+	"04_安装101桌面",        "安装101桌面",                                               0,
+	"05_ND智能相机",                "智能相机",                                                 0,
+	"06_NDSSDK",                   "NDSSDK",                                          		                    0,
+	"07_NDUpdater",                      "NDUpdater",                                0,
+	"08_test",        "test模块",                                               0
+);
+
+selectbox(
+	"五，是否需要删除用户数据",
+	"请根据自己的情况来选择。",
+	"icons/apps",
+	"Wipe.prop",
+	"是否删除用户数据（恢复出厂，双清）","",2, 
+	"删除用户数据（推荐）",                      "将会删除已经安装过的程序，联系人，短信等用户数据，内置卡的数据不会丢失",                     0,
+	"删除用户数据（包括内置储存）",       "将会删除已经安装过的程序，联系人，短信等用户数据，包括内置储存的数据也会清空",             0,
+	"保留数据，不删除",                               "将保留现在的所有数据",                      																		                 1
+);
+endif;
+##-------3.EDU定制结束###-------------###-------------###-------------###-------------###-------------
+
+###-------------###-------------###-------------###-------------###-------------
+
+ini_set("text_next", "开始安装"); 
+viewbox(
+	"已经准备好安装",
+	"安装向导准备完毕.\n\n"+
+	"请按 <b>继续</b>按钮进行安装Rom.\n\n"+ 
+	"也可以按<b>返回</b>键重新选择. 也可以按菜单键退出安装.",
+	"@install"
+);
+
+ini_set("text_next", "继续");
+
+###########安装进度过程###########
+setvar("retstatus",
+  install(
+	"正在安装",
+	"<b>"+ini_get("rom_name")+"</b> 正在安装.\n\n"+    
+	"请等待安装向导安装<b>"+ini_get("rom_name")+
+	"</b>. 这需要几分钟时间.",
+	"@install",
+	"已经成功安装了<b>"+ini_get("rom_name")+
+	"</b>. 请点击继续 继续操作."
+  )
+);
+
+ini_set("text_next", "完成");
+
+checkviewbox(
+    "",
+    "<#selectbg_g><b>安装完成</b></#>\n\n"+
+    "<b>"+ini_get("rom_name")+"</b> for <b>"+ini_get("rom_device")+
+    "</b> 已经成功安装到你的设备",
+    "@welcome",
+    "重启手机",
+    "1",
+    "reboot_it"
+);
+
+if getvar("reboot_it")=="1" then
+  reboot("onfinish");
+endif;
+
