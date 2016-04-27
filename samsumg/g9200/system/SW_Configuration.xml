@@ -1,0 +1,12 @@
+<?xml  version="1.0" encoding="UTF-8" ?>
+<SW-Configuration>
+	<MobileData>
+	<PublicName>SM-G9200</PublicName>
+	</MobileData>
+	<CustomerDataSet>
+	<CSCName>G9200CHC</CSCName>
+	<CSCVersion>2DPC1</CSCVersion>
+	<NbCustomer>1</NbCustomer>
+	<CustomerData src="/Customer/CHC/customer.xml" />
+	</CustomerDataSet>
+</SW-Configuration>

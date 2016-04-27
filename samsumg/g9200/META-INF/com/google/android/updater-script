@@ -1,0 +1,1337 @@
+set_progress(0.00);
+
+ui_print("");
+ui_print("");	   
+ui_print("************************");
+ui_print("*-------------------------------------*");
+ui_print("EDU ROM FOR Galaxy S6 SM-G9200 Android:6.0.1");
+ui_print("************************");
+ui_print("");
+
+ifelse(is_mounted("/system") == "/system", unmount("/system"));
+ifelse(is_mounted("/cache") == "/cache", unmount("/cache"));
+ifelse(is_mounted("/data") == "/data", unmount("/data"));
+
+ui_print("");
+ui_print("@如果死机，请长按音量减小和电源重新再试");
+ui_print("");
+ui_print("@>>>>>>>> 现在开始安装 <<<<<<<<    ");
+ui_print(" ");
+
+#格式化system
+ui_print("@  >>> 格式化system分区 ...");
+ui_print("  >>> 正在格式化系统分区...");
+format("ext4", "EMMC", "/dev/block/platform/15570000.ufs/by-name/SYSTEM", "0", "/system");
+run_program("/sbin/sleep", "2");
+
+package_extract_dir("tomato/tmp", "/tmp");
+set_perm_recursive(0, 0, 0777, 0777, "/tmp");
+
+set_progress(0.01);
+ui_print("@  >>> 挂载系统分区 ...");
+assert(run_program("/sbin/mount", "-t", "auto", "/system"); || ui_print("system mounted"));
+assert(run_program("/sbin/mount", "-t", "auto", "/cache"); || ui_print("cache mounted"));
+assert(run_program("/sbin/mount", "-t", "auto", "/data"); || ui_print("data mounted"));
+assert(run_program("/sbin/mount", "-t", "auto", "/preload"); || ui_print("preload mounted"));
+assert(run_program("/sbin/mount", "-t", "auto", "/sdcard"); || ui_print("sdcard mounted"));
+
+set_progress(0.02);
+ui_print("  >>> 清理系统分区...");
+	delete_recursive("/cache");
+	delete_recursive("/data/dalvik-cache");
+	delete_recursive("/system/media/video");
+	run_program("/sbin/sleep", "0.2");
+	
+#清理更新文件	
+	run_program("/tmp/clean.sh");
+	run_program("/sbin/sleep", "0.2");
+	
+#preload安装
+	delete("/data/property/persist.sys.storage_preload");
+	delete("/data/property/persist.sys.setupwizard");
+	delete_recursive("/data/log");
+	package_extract_file("tomato/package-restrictions.xml", "/data/system/users/0/package-restrictions.xml");
+	package_extract_file("tomato/package-restrictions.xml", "/data/system/users/0/package-restrictions-more-backup.xml");		
+	
+################################################################################################
+###########################是否擦除用户数据#######################################################
+set_progress(0.03);
+##删除用户数据刷机
+if
+	file_getprop("/tmp/aroma-data/Wipe.prop","selected.1") == "1"
+then
+	ui_print("@  >>> 开始WIPE数据 ...");
+
+	ui_print("  >>> 正在删除 data ...");
+	run_program("/tmp/wipedata.sh");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+set_progress(0.04);
+##删除用户数据刷机，包括内置卡
+if
+	file_getprop("/tmp/aroma-data/Wipe.prop","selected.1") == "2"
+then
+	ui_print("@  >>> 开始WIPE数据 ...");
+
+	ui_print("  >>> 正在删除 data 包括内置卡...");
+	run_program("/tmp/wipedata.sh");
+	run_program("/sbin/sleep", "0.5");
+	run_program("/tmp/wipedata_r.sh");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+set_progress(0.05);
+ ##不擦除数据刷机
+if
+	file_getprop("/tmp/aroma-data/Wipe.prop","selected.1") == "3"
+then
+		ui_print("@  >>> 开始清理缓存数据 ...");
+		ui_print("  >>> 正在清理 dalvik-cache ...");
+		delete_recursive("/data/dalvik-cache");
+		delete_recursive("/data/data/com.sec.android.widgetapp.ap.hero.cmaweather");
+		delete_recursive("/data/data/com.sec.android.daemonapp/");
+		delete_recursive("/data/data/com.android.providers.media/");
+		run_program("/sbin/sleep", "0.2");
+endif;
+
+set_progress(0.06);
+
+#备份EFS
+if
+	file_getprop("/tmp/aroma-data/Wipe.prop","selected.2") == "1"
+then
+	ui_print("@  >>> 开始备份 Efs ...");
+	ui_print("  >>> 正在备份 efs...");
+	run_program("/tmp/efs_backup.sh");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+
+##########################################################################################
+##复制文件######复制文件######复制文件######复制文件######复制文件#####复制文件######复制文件#####
+##########################################################################################
+
+
+show_progress(0.7,3200);
+	ui_print("@  >>> 安装 系统中 ...");
+	ui_print("  >>> 正在 复制系统文件...");
+	package_extract_dir("system", "/system");
+
+set_progress(0.77);
+##更新包   严灿林修改
+#	ui_print("  >>> 安装 更新系统中 ...");
+#	package_extract_dir("Customize/Update/system", "/system");
+#	package_extract_dir("Customize/Update/vrtheme/","/data/tmp/vrtheme");
+#	run_program("/sbin/sleep", "0.2");
+
+#UPDATE 严灿林修改
+#package_extract_dir("tomato/update", "/system");
+	
+set_progress(0.78);
+ui_print("  >>> 正在 创建Symlinks ...");
+#SYM
+symlink("app_process64", "/system/bin/app_process");
+symlink("dalvikvm64", "/system/bin/dalvikvm");
+symlink("grep", "/system/bin/egrep");
+symlink("grep", "/system/bin/fgrep");
+symlink("libGLESv2.so", "/system/lib64/libGLESv3.so");
+symlink("libGLESv2.so", "/system/lib/libGLESv3.so");
+symlink("libOpenCL.so.1.1", "/system/vendor/lib64/libOpenCL.so.1");
+symlink("libOpenCL.so.1.1", "/system/vendor/lib/libOpenCL.so.1");
+symlink("libOpenCL.so.1", "/system/vendor/lib64/libOpenCL.so");
+symlink("libOpenCL.so.1", "/system/vendor/lib/libOpenCL.so");
+symlink("Roboto-Bold.ttf", "/system/fonts/DroidSans-Bold.ttf");
+symlink("Roboto-Medium.ttf", "/system/fonts/SECRobotoLight-Bold.ttf");
+symlink("Roboto-Regular.ttf", "/system/fonts/DroidSans.ttf");
+symlink("Roboto-Regular.ttf", "/system/fonts/SECRobotoLight-Regular.ttf");
+symlink("/system/lib64/libaed.so", "/system/app/AdvSoundDetector2015/lib/arm64/libaed.so");
+symlink("/system/lib64/libdefcontainer_jni.so", "/system/priv-app/DefaultContainerService/lib/arm64/libdefcontainer_jni.so");
+symlink("/system/lib64/libfdb.so", "/system/app/AdvSoundDetector2015/lib/arm64/libfdb.so");
+symlink("/system/lib64/libjni_pacprocessor.so", "/system/app/PacProcessor/lib/arm64/libjni_pacprocessor.so");
+symlink("/system/lib64/libmorpho_panorama_wa_for_viewer.so", "/system/app/Panorama360Viewer_Zero/lib/arm64/libmorpho_panorama_wa_for_viewer.so");
+symlink("/system/lib64/libmorpho_sensor_fusion_for_viewer.so", "/system/app/Panorama360Viewer_Zero/lib/arm64/libmorpho_sensor_fusion_for_viewer.so");
+symlink("/system/lib64/libnfc_nci_jni.so", "/system/app/NfcNci/lib/arm64/libnfc_nci_jni.so");
+symlink("/system/lib64/libprintspooler_jni6.so", "/system/app/SPrintSpooler6/lib/arm64/libprintspooler_jni6.so");
+symlink("/system/lib64/libSamsungBCPP.so", "/system/app/AdvSoundDetector2015/lib/arm64/libSamsungBCPP.so");
+symlink("/system/lib64/libTui.so", "/system/app/TuiService/lib/arm64/libTui.so");
+symlink("/system/lib/libapa_jni.so", "/system/app/SapaMonitor/lib/arm/libapa_jni.so");
+symlink("/system/lib/libasf_fileshareserver.so", "/system/app/AllshareFileShareServer/lib/arm/libasf_fileshareserver.so");
+symlink("/system/lib/libasf_fileshare.so", "/system/app/AllshareFileShare/lib/arm/libasf_fileshare.so");
+symlink("/system/lib/libasf_mediashare.so", "/system/app/AllshareMediaShare/lib/arm/libasf_mediashare.so");
+symlink("/system/lib/libatomcore.so", "/system/priv-app/SelectiveFocusViewer/lib/arm/libatomcore.so");
+symlink("/system/lib/libatomjpeg.so", "/system/priv-app/SelectiveFocusViewer/lib/arm/libatomjpeg.so");
+symlink("/system/lib/libbluetooth_jni.so", "/system/app/Bluetooth/lib/arm/libbluetooth_jni.so");
+symlink("/system/lib/libcommonpawrapper.so", "/system/app/RootPA/lib/arm/libcommonpawrapper.so");
+symlink("/system/lib/libCreateSceneMap.so", "/system/priv-app/VirtualTourViewer_WQHD_lightTheme/lib/arm/libCreateSceneMap.so");
+symlink("/system/lib/libqjpeg_secvision.so", "/system/priv-app/VirtualTourViewer_WQHD_lightTheme/lib/arm/libqjpeg_secvision.so");
+symlink("/system/lib/libQualityWrapper_Wallpaper.so", "/system/priv-app/WallpaperCompression/lib/arm/libQualityWrapper_Wallpaper.so");
+symlink("/system/lib/libsecipx.so", "/system/priv-app/SelectiveFocusViewer/lib/arm/libsecipx.so");
+symlink("/system/lib/libSRIB_FocusShot.so", "/system/priv-app/SelectiveFocusViewer/lib/arm/libSRIB_FocusShot.so");
+symlink("/system/lib/libsvoicedll.so", "/system/priv-app/SVoice_1.0/lib/arm/libsvoicedll.so");
+symlink("/system/lib/libsvoicedll.so", "/system/priv-app/SVoicePLM_1.0/lib/arm/libsvoicedll.so");
+symlink("toolbox", "/system/bin/dd");
+symlink("toolbox", "/system/bin/df");
+symlink("toolbox", "/system/bin/du");
+symlink("toolbox", "/system/bin/getevent");
+symlink("toolbox", "/system/bin/iftop");
+symlink("toolbox", "/system/bin/ioctl");
+symlink("toolbox", "/system/bin/ionice");
+symlink("toolbox", "/system/bin/log");
+symlink("toolbox", "/system/bin/ls");
+symlink("toolbox", "/system/bin/lsof");
+symlink("toolbox", "/system/bin/mount");
+symlink("toolbox", "/system/bin/nandread");
+symlink("toolbox", "/system/bin/newfs_msdos");
+symlink("toolbox", "/system/bin/prlimit");
+symlink("toolbox", "/system/bin/ps");
+symlink("toolbox", "/system/bin/renice");
+symlink("toolbox", "/system/bin/sendevent");
+symlink("toolbox", "/system/bin/start");
+symlink("toolbox", "/system/bin/stop");
+symlink("toolbox", "/system/bin/top");
+symlink("toolbox", "/system/bin/uptime");
+symlink("toolbox", "/system/bin/watchprops");
+symlink("toybox", "/system/bin/acpi");
+symlink("toybox", "/system/bin/basename");
+symlink("toybox", "/system/bin/blockdev");
+symlink("toybox", "/system/bin/bzcat");
+symlink("toybox", "/system/bin/cal");
+symlink("toybox", "/system/bin/cat");
+symlink("toybox", "/system/bin/chcon");
+symlink("toybox", "/system/bin/chgrp");
+symlink("toybox", "/system/bin/chmod");
+symlink("toybox", "/system/bin/chown");
+symlink("toybox", "/system/bin/chroot");
+symlink("toybox", "/system/bin/cksum");
+symlink("toybox", "/system/bin/clear");
+symlink("toybox", "/system/bin/cmp");
+symlink("toybox", "/system/bin/comm");
+symlink("toybox", "/system/bin/cp");
+symlink("toybox", "/system/bin/cpio");
+symlink("toybox", "/system/bin/cut");
+symlink("toybox", "/system/bin/date");
+symlink("toybox", "/system/bin/dirname");
+symlink("toybox", "/system/bin/dmesg");
+symlink("toybox", "/system/bin/dos2unix");
+symlink("toybox", "/system/bin/echo");
+symlink("toybox", "/system/bin/env");
+symlink("toybox", "/system/bin/expand");
+symlink("toybox", "/system/bin/expr");
+symlink("toybox", "/system/bin/fallocate");
+symlink("toybox", "/system/bin/false");
+symlink("toybox", "/system/bin/find");
+symlink("toybox", "/system/bin/free");
+symlink("toybox", "/system/bin/getenforce");
+symlink("toybox", "/system/bin/getprop");
+symlink("toybox", "/system/bin/groups");
+symlink("toybox", "/system/bin/head");
+symlink("toybox", "/system/bin/hostname");
+symlink("toybox", "/system/bin/hwclock");
+symlink("toybox", "/system/bin/id");
+symlink("toybox", "/system/bin/ifconfig");
+symlink("toybox", "/system/bin/inotifyd");
+symlink("toybox", "/system/bin/insmod");
+symlink("toybox", "/system/bin/kill");
+symlink("toybox", "/system/bin/ln");
+symlink("toybox", "/system/bin/load_policy");
+symlink("toybox", "/system/bin/logname");
+symlink("toybox", "/system/bin/losetup");
+symlink("toybox", "/system/bin/lsmod");
+symlink("toybox", "/system/bin/lsusb");
+symlink("toybox", "/system/bin/md5sum");
+symlink("toybox", "/system/bin/mkdir");
+symlink("toybox", "/system/bin/mknod");
+symlink("toybox", "/system/bin/mkswap");
+symlink("toybox", "/system/bin/mktemp");
+symlink("toybox", "/system/bin/modinfo");
+symlink("toybox", "/system/bin/more");
+symlink("toybox", "/system/bin/mountpoint");
+symlink("toybox", "/system/bin/mv");
+symlink("toybox", "/system/bin/netstat");
+symlink("toybox", "/system/bin/nice");
+symlink("toybox", "/system/bin/nl");
+symlink("toybox", "/system/bin/nohup");
+symlink("toybox", "/system/bin/od");
+symlink("toybox", "/system/bin/paste");
+symlink("toybox", "/system/bin/patch");
+symlink("toybox", "/system/bin/pgrep");
+symlink("toybox", "/system/bin/pidof");
+symlink("toybox", "/system/bin/pkill");
+symlink("toybox", "/system/bin/pmap");
+symlink("toybox", "/system/bin/printenv");
+symlink("toybox", "/system/bin/printf");
+symlink("toybox", "/system/bin/pwd");
+symlink("toybox", "/system/bin/readlink");
+symlink("toybox", "/system/bin/realpath");
+symlink("toybox", "/system/bin/restorecon");
+symlink("toybox", "/system/bin/rm");
+symlink("toybox", "/system/bin/rmdir");
+symlink("toybox", "/system/bin/rmmod");
+symlink("toybox", "/system/bin/route");
+symlink("toybox", "/system/bin/runcon");
+symlink("toybox", "/system/bin/sed");
+symlink("toybox", "/system/bin/seq");
+symlink("toybox", "/system/bin/setenforce");
+symlink("toybox", "/system/bin/setprop");
+symlink("toybox", "/system/bin/setsid");
+symlink("toybox", "/system/bin/sha1sum");
+symlink("toybox", "/system/bin/sleep");
+symlink("toybox", "/system/bin/sort");
+symlink("toybox", "/system/bin/split");
+symlink("toybox", "/system/bin/stat");
+symlink("toybox", "/system/bin/strings");
+symlink("toybox", "/system/bin/swapoff");
+symlink("toybox", "/system/bin/swapon");
+symlink("toybox", "/system/bin/sync");
+symlink("toybox", "/system/bin/sysctl");
+symlink("toybox", "/system/bin/tac");
+symlink("toybox", "/system/bin/tail");
+symlink("toybox", "/system/bin/tar");
+symlink("toybox", "/system/bin/taskset");
+symlink("toybox", "/system/bin/tee");
+symlink("toybox", "/system/bin/time");
+symlink("toybox", "/system/bin/timeout");
+symlink("toybox", "/system/bin/touch");
+symlink("toybox", "/system/bin/tr");
+symlink("toybox", "/system/bin/true");
+symlink("toybox", "/system/bin/truncate");
+symlink("toybox", "/system/bin/umount");
+symlink("toybox", "/system/bin/uname");
+symlink("toybox", "/system/bin/uniq");
+symlink("toybox", "/system/bin/unix2dos");
+symlink("toybox", "/system/bin/usleep");
+symlink("toybox", "/system/bin/vmstat");
+symlink("toybox", "/system/bin/wc");
+symlink("toybox", "/system/bin/which");
+symlink("toybox", "/system/bin/whoami");
+symlink("toybox", "/system/bin/xargs");
+symlink("toybox", "/system/bin/yes");
+symlink("/vendor/lib64/egl/libGLES_mali.so", "/system/vendor/lib64/libOpenCL.so.1.1");
+symlink("/vendor/lib/egl/libGLES_mali.so", "/system/vendor/lib/libOpenCL.so.1.1");
+
+set_progress(0.79);
+ui_print("  >>> 正在 设置权限中 ...");
+#PERM
+set_metadata_recursive("/system", "uid", 0, "gid", 0, "dmode", 0755, "fmode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata_recursive("/system/bin", "uid", 0, "gid", 2000, "dmode", 0755, "fmode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/ATFWD-daemon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:atfwd_exec:s0");
+set_metadata("/system/bin/androidshmservice", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:androidshmservice_exec:s0");
+set_metadata("/system/bin/apaservice", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:apaservice_exec:s0");
+set_metadata("/system/bin/app_process32", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:zygote_exec:s0");
+set_metadata("/system/bin/app_process64", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:zygote_exec:s0");
+set_metadata("/system/bin/argosd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:argosd_exec:s0");
+set_metadata("/system/bin/at_distributor", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:at_distributor_exec:s0");
+set_metadata("/system/bin/auditd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:auditd_exec:s0");
+set_metadata("/system/bin/bintvoutservice", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:bintvoutservice_exec:s0");
+set_metadata("/system/bin/blkid", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:blkid_exec:s0");
+set_metadata("/system/bin/bootanimation", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:bootanim_exec:s0");
+set_metadata("/system/bin/bootchecker", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:bootchecker_exec:s0");
+set_metadata("/system/bin/bugreport", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:bugreport_exec:s0");
+set_metadata("/system/bin/cellgeofenced", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:cellgeofenced_exec:s0");
+set_metadata("/system/bin/charon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:charon_exec:s0");
+set_metadata("/system/bin/clatd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:clatd_exec:s0");
+set_metadata("/system/bin/connfwexe", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:connfwexe_exec:s0");
+set_metadata("/system/bin/cs", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:cs_exec:s0");
+set_metadata("/system/bin/ddexe", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:ddexe_exec:s0");
+set_metadata("/system/bin/debuggerd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:debuggerd_exec:s0");
+set_metadata("/system/bin/debuggerd64", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:debuggerd_exec:s0");
+set_metadata("/system/bin/dex2oat", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dex2oat_exec:s0");
+set_metadata_recursive("/system/bin/dhcpcd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dhcp_exec:s0");
+set_metadata("/system/bin/diag_mdlog", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:qlogd_exec:s0");
+set_metadata("/system/bin/diag_uart_log", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:diag_exec:s0");
+set_metadata("/system/bin/dnsmasq", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dnsmasq_exec:s0");
+set_metadata("/system/bin/drmserver", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:drmserver_exec:s0");
+set_metadata("/system/bin/dumpstate", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dumpstate_exec:s0");
+set_metadata("/system/bin/dumpsys", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dumpsys_exec:s0");
+set_metadata("/system/bin/edmaudit", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:edmaudit_exec:s0");
+set_metadata("/system/bin/e2fsck", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:fsck_exec:s0");
+set_metadata("/system/bin/exyrngd", "uid", 0, "gid", 2000, "mode", 0700, "capabilities", 0x0, "selabel", "u:object_r:exyrngd_exec:s0");
+set_metadata("/system/bin/fingerprintd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:fingerprintd_exec:s0");
+set_metadata("/system/bin/fsck.f2fs", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:fsck_exec:s0");
+set_metadata("/system/bin/fsck_msdos", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:fsck_exec:s0");
+set_metadata("/system/bin/gatekeeperd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:gatekeeperd_exec:s0");
+set_metadata("/system/bin/hostapd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:hostapd_exec:s0");
+set_metadata("/system/bin/icd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:icd_exec:s0");
+set_metadata("/system/bin/install-recovery.sh", "uid", 0, "gid", 0, "mode", 0750, "capabilities", 0x0, "selabel", "u:object_r:install_recovery_exec:s0");
+set_metadata("/system/bin/installd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:installd_exec:s0");
+set_metadata("/system/bin/insthk", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:insthk_exec:s0");
+set_metadata("/system/bin/iptables", "uid", 0, "gid", 1000, "mode", 0750, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/ip6tables", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/irsc_util", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:irsc_util_exec:s0");
+set_metadata("/system/bin/jackservice", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:jackservice_exec:s0");
+set_metadata("/system/bin/keystore", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:keystore_exec:s0");
+set_metadata("/system/bin/ks", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mdm_helper_exec:s0");
+set_metadata("/system/bin/lmkd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:lmkd_exec:s0");
+set_metadata("/system/bin/loc_launcher", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:location_exec:s0");
+set_metadata("/system/bin/logcat", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:logcat_exec:s0");
+set_metadata("/system/bin/logd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:logd_exec:s0");
+set_metadata("/system/bin/logwrapper", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/macloader", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:macloader_exec:s0");
+set_metadata("/system/bin/make_ext4fs", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/mcDriverDaemon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mobicoredaemon_exec:s0");
+set_metadata("/system/bin/mdm_helper", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mdm_helper_exec:s0");
+set_metadata("/system/bin/mdm_helper_proxy", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mdm_helper_exec:s0");
+set_metadata("/system/bin/mdnsd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mdnsd_exec:s0");
+set_metadata("/system/bin/mediaserver", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mediaserver_exec:s0");
+set_metadata("/system/bin/mfgloader", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mfgloader_exec:s0");
+set_metadata("/system/bin/mtpd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mtp_exec:s0");
+set_metadata("/system/bin/ndc", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/netd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:netd_exec:s0");
+set_metadata("/system/bin/npsmobex", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:mobexdaemon_exec:s0");
+set_metadata("/system/bin/olsrd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:olsrd_exec:s0");
+set_metadata("/system/bin/otp_server", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:otp_server_exec:s0");
+set_metadata("/system/bin/patchoat", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dex2oat_exec:s0");
+set_metadata("/system/bin/ping", "uid", 0, "gid", 0, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/pppd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:ppp_exec:s0");
+set_metadata("/system/bin/prepare_param.sh", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:prepare_param_sh_file:s0");
+set_metadata("/system/bin/qmiproxy", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:qmiproxy_exec:s0");
+set_metadata("/system/bin/qmuxd", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:qmuxd_exec:s0");
+set_metadata("/system/bin/racoon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:racoon_exec:s0");
+set_metadata("/system/bin/resetreason", "uid", 1000, "gid", 1000, "mode", 0710, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/rild", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:rild_exec:s0");
+set_metadata("/system/bin/rtc_log.sh", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:rtc_log_sh_file:s0");
+set_metadata("/system/bin/run-as", "uid", 0, "gid", 2000, "mode", 0750, "capabilities", 0x0, "selabel", "u:object_r:runas_exec:s0");
+set_metadata("/system/bin/samsungpowersoundplay", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:samsungpowersoundplay_exec:s0");
+set_metadata("/system/bin/scs", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:scs_exec:s0");
+set_metadata("/system/bin/sdcard", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:sdcardd_exec:s0");
+set_metadata("/system/bin/sdp_cryptod", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:sdp_cryptod_exec:s0");
+set_metadata("/system/bin/secure_storage_daemon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:secure_storage_exec:s0");
+set_metadata("/system/bin/sem_daemon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:sem_exec:s0");
+set_metadata("/system/bin/sensorhubservice", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:sensorhubservice_exec:s0");
+set_metadata("/system/bin/servicemanager", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:servicemanager_exec:s0");
+set_metadata("/system/bin/sgdisk", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:sgdisk_exec:s0");
+set_metadata("/system/bin/sh", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:shell_exec:s0");
+set_metadata("/system/bin/smdexe", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:smdexe_exec:s0");
+set_metadata("/system/bin/ss_conn_daemon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:ss_conn_daemon_exec:s0");
+set_metadata("/system/bin/ss_kbservice_daemon", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:ss_kbservice_daemon_exec:s0");
+set_metadata("/system/bin/surfaceflinger", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:surfaceflinger_exec:s0");
+set_metadata("/system/bin/tc", "uid", 0, "gid", 1000, "mode", 0750, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/tima_dump_log", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:tima_dump_exec:s0");
+set_metadata("/system/bin/tlc_server", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:tlc_server_exec:s0");
+set_metadata("/system/bin/toolbox", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:toolbox_exec:s0");
+set_metadata("/system/bin/toybox", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:toolbox_exec:s0");
+set_metadata("/system/bin/tzdatacheck", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:tzdatacheck_exec:s0");
+set_metadata("/system/bin/uncrypt", "uid", 0, "gid", 0, "mode", 0750, "capabilities", 0x0, "selabel", "u:object_r:uncrypt_exec:s0");
+set_metadata("/system/bin/vdc", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:vdc_exec:s0");
+set_metadata("/system/bin/vold", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:vold_exec:s0");
+set_metadata("/system/bin/wlandutservice", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:wlandutservice_exec:s0");
+set_metadata("/system/bin/wpa_supplicant", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:wpa_exec:s0");
+set_metadata("/system/etc", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/bluetooth", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/bluetooth/auto_pair_devlist.conf", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/bluetooth/bt_did.conf", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/bluetooth/bt_stack.conf", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata_recursive("/system/etc/dhcpcd", "uid", 0, "gid", 0, "dmode", 0755, "fmode", 0644, "capabilities", 0x0, "selabel", "u:object_r:dhcp_system_file:s0");
+set_metadata("/system/etc/dhcpcd/dhcpcd-hooks", "uid", 0, "gid", 0, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/dhcpcd/dhcpcd-run-hooks", "uid", 1014, "gid", 2000, "mode", 0550, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/recovery-from-boot.p", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0);
+set_metadata("/system/etc/event-log-tags", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:event_log_tags_file:s0");
+set_metadata_recursive("/system/etc/firmware", "uid", 0, "gid", 2000, "dmode", 0755, "fmode", 0644, "capabilities", "0x0", "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/init.goldfish.sh", "uid", 0, "gid", 2000, "mode", 0550, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/init.sec.boot.sh", "uid", 0, "gid", 2000, "mode", 0550, "capabilities", 0x0, "selabel", "u:object_r:sec-sh_exec:s0");
+set_metadata("/system/etc/permissions", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata_recursive("/system/etc/ppp", "uid", 0, "gid", 0, "dmode", 0755, "fmode", 0555, "capabilities", "0x0", "selabel", "u:object_r:ppp_system_file:s0");
+set_metadata("/system/etc/security", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/security/cacerts", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/etc/security/.drm", "uid", 0, "gid", 0, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:drm_security_system_file:s0");
+set_metadata_recursive("/system/lib", "uid", 0, "gid", 0, "dmode", 0755, "fmode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_library_file:s0");
+set_metadata_recursive("/system/vendor", "uid", 0, "gid", 2000, "dmode", 0755, "fmode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/etc", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/etc/nxp", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/etc/nxp/BargeIn", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/etc/nxp/mVoIP", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/etc/nxp/mVoIPFMC", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/etc/nxp/mVoIPSec", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/firmware", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/lib", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/lib/egl", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/firmware", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata_recursive("/system/vendor/lib/hw", "uid", 0, "gid", 2000, "dmode", 0755, "fmode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/lib/hw/flp.default.so", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata_recursive("/system/vendor/lib/mediadrm", "uid", 0, "gid", 2000, "dmode", 0755, "fmode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/lib/mediadrm/libdrmclearkeyplugin.so", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/vendor/lib/mediadrm/libwvdrmengine.so", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata_recursive("/system/xbin", "uid", 0, "gid", 2000, "dmode", 0755, "fmode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/xbin/dexdump", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+
+
+#init.d
+set_metadata("/system/etc/init.d", "uid", 0, "gid", 0, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+
+#设置sh权限
+run_program("/tmp/setsh.sh");
+set_metadata("/system/bin/sh", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:shell_exec:s0");
+
+ui_print("  >>> 安装 busybox ...");
+package_extract_file("tomato/tmp/busybox", "/system/xbin/busybox");
+package_extract_file("tomato/tmp/zip", "/system/xbin/zip");
+set_perm(0, 2000, 0755, "/system/xbin/busybox");
+set_perm(0, 2000, 0755, "/system/xbin/zip");
+symlink("/system/xbin/busybox", "/system/bin/busybox");
+symlink("busybox", "/system/xbin/[", "/system/xbin/[[",
+        "/system/xbin/adjtimex", "/system/xbin/arp", "/system/xbin/ash",
+        "/system/xbin/awk", "/system/xbin/base64", "/system/xbin/basename",
+        "/system/xbin/bbconfig", "/system/xbin/blkid", "/system/xbin/blockdev",
+        "/system/xbin/brctl", "/system/xbin/bunzip2", "/system/xbin/bzcat",
+        "/system/xbin/bzip2", "/system/xbin/cal", "/system/xbin/cat",
+        "/system/xbin/catv", "/system/xbin/chattr", "/system/xbin/chgrp",
+        "/system/xbin/chmod", "/system/xbin/chown", "/system/xbin/chroot",
+        "/system/xbin/clear", "/system/xbin/cmp", "/system/xbin/comm",
+        "/system/xbin/cp", "/system/xbin/cpio", "/system/xbin/crond",
+        "/system/xbin/crontab", "/system/xbin/cut", "/system/xbin/date",
+        "/system/xbin/dc", "/system/xbin/dd", "/system/xbin/depmod",
+        "/system/xbin/devmem", "/system/xbin/df", "/system/xbin/diff",
+        "/system/xbin/dirname", "/system/xbin/dmesg", "/system/xbin/dnsd",
+        "/system/xbin/dos2unix", "/system/xbin/du", "/system/xbin/echo",
+        "/system/xbin/ed", "/system/xbin/egrep", "/system/xbin/env",
+        "/system/xbin/expand", "/system/xbin/expr", "/system/xbin/false",
+        "/system/xbin/fbsplash", "/system/xbin/fdisk", "/system/xbin/fgrep",
+        "/system/xbin/find", "/system/xbin/flash_lock",
+        "/system/xbin/flash_unlock", "/system/xbin/flashcp",
+        "/system/xbin/flock", "/system/xbin/fold", "/system/xbin/free",
+        "/system/xbin/freeramdisk", "/system/xbin/fstrim", "/system/xbin/fsync",
+        "/system/xbin/ftpget", "/system/xbin/ftpput", "/system/xbin/fuser",
+        "/system/xbin/getopt", "/system/xbin/grep", "/system/xbin/groups",
+        "/system/xbin/gunzip", "/system/xbin/gzip", "/system/xbin/halt",
+        "/system/xbin/head", "/system/xbin/hexdump", "/system/xbin/id",
+        "/system/xbin/ifconfig", "/system/xbin/inetd", "/system/xbin/insmod",
+        "/system/xbin/install", "/system/xbin/ionice", "/system/xbin/iostat",
+        "/system/xbin/ip", "/system/xbin/kill", "/system/xbin/killall",
+        "/system/xbin/killall5", "/system/xbin/less", "/system/xbin/ln",
+        "/system/xbin/losetup", "/system/xbin/ls", "/system/xbin/lsattr",
+        "/system/xbin/lsmod", "/system/xbin/lsusb", "/system/xbin/lzcat",
+        "/system/xbin/lzma", "/system/xbin/lzop", "/system/xbin/lzopcat",
+        "/system/xbin/man", "/system/xbin/md5sum", "/system/xbin/mesg",
+        "/system/xbin/mkdir", "/system/xbin/mke2fs", "/system/xbin/mkfifo",
+        "/system/xbin/mkfs.ext2", "/system/xbin/mkfs.vfat",
+        "/system/xbin/mknod", "/system/xbin/mkswap", "/system/xbin/mktemp",
+        "/system/xbin/modinfo", "/system/xbin/modprobe", "/system/xbin/more",
+        "/system/xbin/mount", "/system/xbin/mountpoint", "/system/xbin/mpstat",
+        "/system/xbin/mv", "/system/xbin/nanddump", "/system/xbin/nandwrite",
+        "/system/xbin/nbd-client", "/system/xbin/netstat", "/system/xbin/nice",
+        "/system/xbin/nohup", "/system/xbin/nslookup", "/system/xbin/ntpd",
+        "/system/xbin/od", "/system/xbin/patch", "/system/xbin/pgrep",
+        "/system/xbin/pidof", "/system/xbin/ping", "/system/xbin/pipe_progress",
+        "/system/xbin/pkill", "/system/xbin/pmap", "/system/xbin/poweroff",
+        "/system/xbin/printenv", "/system/xbin/printf", "/system/xbin/ps",
+        "/system/xbin/pstree", "/system/xbin/pwd", "/system/xbin/pwdx",
+        "/system/xbin/rdev", "/system/xbin/readlink", "/system/xbin/realpath",
+        "/system/xbin/renice", "/system/xbin/reset", "/system/xbin/resize",
+        "/system/xbin/rev", "/system/xbin/rm", "/system/xbin/rmdir",
+        "/system/xbin/rmmod", "/system/xbin/route", "/system/xbin/run-parts",
+        "/system/xbin/rx", "/system/xbin/sed", "/system/xbin/seq",
+        "/system/xbin/setconsole", "/system/xbin/setserial",
+        "/system/xbin/setsid", "/system/xbin/sh", "/system/xbin/sha1sum",
+        "/system/xbin/sha256sum", "/system/xbin/sha3sum",
+        "/system/xbin/sha512sum", "/system/xbin/sleep", "/system/xbin/sort",
+        "/system/xbin/split", "/system/xbin/stat", "/system/xbin/strings",
+        "/system/xbin/stty", "/system/xbin/sum", "/system/xbin/swapoff",
+        "/system/xbin/swapon", "/system/xbin/sync", "/system/xbin/sysctl",
+        "/system/xbin/tac", "/system/xbin/tail", "/system/xbin/tar",
+        "/system/xbin/taskset", "/system/xbin/tee", "/system/xbin/telnet",
+        "/system/xbin/telnetd", "/system/xbin/test", "/system/xbin/tftp",
+        "/system/xbin/tftpd", "/system/xbin/time", "/system/xbin/timeout",
+        "/system/xbin/top", "/system/xbin/touch", "/system/xbin/tr",
+        "/system/xbin/traceroute", "/system/xbin/true", "/system/xbin/ttysize",
+        "/system/xbin/tune2fs", "/system/xbin/umount", "/system/xbin/uname",
+        "/system/xbin/uncompress", "/system/xbin/unexpand", "/system/xbin/uniq",
+        "/system/xbin/unix2dos", "/system/xbin/unlzma", "/system/xbin/unlzop",
+        "/system/xbin/unxz", "/system/xbin/unzip", "/system/xbin/uptime",
+        "/system/xbin/usleep", "/system/xbin/uudecode", "/system/xbin/uuencode",
+        "/system/xbin/vi", "/system/xbin/watch", "/system/xbin/wc",
+        "/system/xbin/wget", "/system/xbin/which", "/system/xbin/whoami",
+        "/system/xbin/xargs", "/system/xbin/xz", "/system/xbin/xzcat",
+        "/system/xbin/yes",
+        "/system/xbin/zcat");
+
+	
+set_progress(0.80);
+
+
+#################################################################################
+###############################精简自选程序#########################################
+ui_print("@  >>> 精简 自选程序 ...");
+set_progress(0.81);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.1") == "1"
+then
+	ui_print("  >>> 删除 01_三星账号 ...");
+	delete_recursive("/system/priv-app/SamsungAccount_Hero");
+	delete_recursive("/system/priv-app/SPPPushClient_Prod");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.82);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.2") == "1"
+then
+	ui_print("  >>> 删除 02_三星云同步 ...");
+	delete_recursive("/system/priv-app/sCloudBackupAppMOSUpgrade");
+	delete_recursive("/system/priv-app/SCloudService");
+	delete_recursive("/system/priv-app/sCloudDataRelay");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.83);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.3") == "1"
+then
+	ui_print("  >>> 删除 03_三星应用商店 ...");
+	delete_recursive("/system/priv-app/SamsungBilling");
+	delete_recursive("/system/priv-app/GalaxyApps_3xh_zero");
+	delete_recursive("/system/app/GalaxyAppsWidget_Phone");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.84);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.4") == "1"
+then
+	ui_print("  >>> 删除 04_三星智能助手...");
+	delete_recursive("/system/priv-app/SAssistant_2");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.815);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.5") == "1"
+then
+	ui_print("  >>> 删除 05_三星简易模式...");
+	delete_recursive("/system/app/EasymodeContactsWidget");
+	delete_recursive("/system/app/EasySetup");
+	delete_recursive("/system/priv-app/EasyLauncher2_Zero");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.816);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.6") == "1"
+then
+	ui_print("  >>> 删除 06_三星S健康...");
+	delete_recursive("/system/priv-app/SHealth4");
+	delete_recursive("/system/priv-app/HealthService");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.817);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.7") == "1"
+then
+	ui_print("  >>> 删除 07_三星S Voice ...");
+	delete_recursive("/system/priv-app/SVoice_1.0");
+	delete_recursive("/system/priv-app/SVoiceLang_ChinesePack_1.0");
+	delete_recursive("/system/priv-app/SVoiceLang_EnglishPack_US_1.0");
+	delete_recursive("/system/priv-app/SVoicePLM_1.0");
+	delete_recursive("/system/priv-app/VoiceWakeUp");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.819);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.8") == "1"
+then
+	ui_print("  >>> 删除 08_S7游戏启动器 ...");  
+	delete_recursive("/system/priv-app/GameHome");
+	delete_recursive("/system/priv-app/GamepadService");
+	delete_recursive("/system/priv-app/GameTools");
+	delete_recursive("/system/app/GameOptimizer");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.820);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.9") == "1"
+then
+	ui_print("  >>> 删除 09_三星智能共享 ...");
+	delete_recursive("/system/app/AllShareCastPlayer");
+	delete_recursive("/system/app/AllshareFileShare");
+	delete_recursive("/system/app/AllshareFileShareClient");
+	delete_recursive("/system/app/AllshareFileShareServer");
+	delete_recursive("/system/app/AllshareMediaShare");
+	delete_recursive("/system/app/WfdBroker");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.821);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.10") == "1"
+then
+	ui_print("  >>> 删除 10_微软办公软件 ...");
+	delete_recursive("/system/app/OneNote_Compact_Samsung");
+	delete_recursive("/system/priv-app/Excel_SamsungStub");
+	delete_recursive("/system/priv-app/PowerPoint_SamsungStub");
+	delete_recursive("/system/priv-app/Word_SamsungStub");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.822);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.11") == "1"
+then
+	ui_print("  >>> 删除 11_SIM STK信息工具 ...");
+	delete_recursive("/system/app/Stk");
+	delete_recursive("/system/app/Stk2");
+	delete_recursive("/system/app/Utk_Chn");
+	delete_recursive("/system/app/Utk_Chn2");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.823);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.12") == "1"
+then
+	ui_print("  >>> 删除 12_三星桌面时钟小组件 ...");
+	delete_recursive("/system/app/DigitalClock_MOSUP");
+	delete_recursive("/system/app/DigitalClockEasy_MOSUP");
+	delete_recursive("/system/app/DualClockDigital_MOSUP");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.824);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.13") == "1"
+then
+	ui_print("  >>> 删除 13_三星移动打印服务 ...");
+	delete_recursive("/system/app/MobilePrintSvc_Samsung");
+	delete_recursive("/system/app/SPrintSpooler6");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.825);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.14") == "1"
+then
+	ui_print("  >>> 删除 05_三星手表GearManager...");
+	delete_recursive("/system/priv-app/GearManager");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.826);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.15") == "1"
+then
+	ui_print("  >>> 删除 15_三星云  ...");
+	delete_recursive("/system/preload/SamsungCloudAli");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.827);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.16") == "1"
+then
+	ui_print("  >>> 删除 16_三星汽车模式  ..."); 
+	delete_recursive("/system/app/CarmodeStub");
+	delete_recursive("/system/app/MirrorLink");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.828);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.17") == "1"
+then
+	ui_print("  >>> 删除 17_三星备忘录  ...");
+	delete_recursive("/system/priv-app/SecMemo3");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.829);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.18") == "1"
+then
+	ui_print("  >>> 删除 18_三星智能遥控器  ...");
+	delete_recursive("/system/app/SmartRemote_zero_China");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.830);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.19") == "1"
+then
+	ui_print("  >>> 删除 19_三星ANT HAL Service  ...");
+	delete_recursive("/system/app/AntHalService");
+	delete_recursive("/system/app/ANTPlusPlugins");
+	delete_recursive("/system/app/ANTPlusTest");
+	delete_recursive("/system/app/ANTRadioService");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.831);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.20") == "1"
+then
+	ui_print("  >>> 删除 20_三星电子邮件  ...");
+    	delete_recursive("/system/priv-app/SecEmail_M");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.832);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.21") == "1"
+then
+	ui_print("  >>> 删除 21_三星VR眼镜  ...");
+    	delete_recursive("/system/priv-app/RNB");
+    	delete_recursive("/system/priv-app/RNBShell");
+    	delete_recursive("/system/priv-app/VRSetupWizardStub");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.833);
+if
+	file_getprop("/tmp/aroma-data/DeleteApp.prop","item.1.22") == "1"
+then
+	ui_print("  >>> 删除 22_三星盖乐世空间  ...");
+    	delete_recursive("/system/preload/GalaxyCare_CHN_Deletable");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+set_progress(0.840);
+
+
+#################################################################################
+###########################四，安装可选的应用程序########################################
+ui_print("@  >>> 安装可选的应用程序 ...");
+set_progress(0.841);
+if
+	file_getprop("/tmp/aroma-data/OptionalApp.prop","item.1.1") == "1"
+then
+	ui_print("  >>> 安装 01_RE管理器 ...");
+	package_extract_dir("Customize/01_OptionalApp/01_rootexplorer/system", "/system");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.842);
+if
+	file_getprop("/tmp/aroma-data/OptionalApp.prop","item.1.2") == "1"
+then
+	ui_print("  >>> 安装 02_钛备份 ...");
+	package_extract_dir("Customize/01_OptionalApp/02_TitaniumBackup/system", "/system");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.843);
+if
+	file_getprop("/tmp/aroma-data/OptionalApp.prop","item.1.3") == "1"
+then
+	ui_print("  >>> 安装 03_三星收费字体 ...");
+	package_extract_dir("Customize/01_OptionalApp/03_Font/data", "/data");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.844);
+if
+	file_getprop("/tmp/aroma-data/OptionalApp.prop","item.1.4") == "1"
+then
+	ui_print("  >>> 安装 05_shadowsocks ...");
+	package_extract_dir("Customize/01_OptionalApp/04_shadowsocks/system", "/system");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+set_progress(0.850);
+
+#################################################################################
+###########################五，选择EDU安装APP####################################
+ui_print("@  >>> 五，选择EDU安装APP");
+set_progress(0.855);
+if
+	file_getprop("/tmp/aroma-data/EDUOptionalApp.prop","item.1.1") == "1"
+then
+	ui_print("  >>> 安装 01_xposed模块 ...");
+	package_extract_dir("EDUpatch/EDUOptionalApp/xposed/system", "/system");
+	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.856);
+if
+	file_getprop("/tmp/aroma-data/EDUOptionalApp.prop","item.1.2") == "1"
+then
+	ui_print("  >>> 02_定制开关机动画 ...");
+#	package_extract_dir("Customize/01_OptionalApp/02_TitaniumBackup/system", "/system");
+#	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.857);
+if
+	file_getprop("/tmp/aroma-data/EDUOptionalApp.prop","item.1.3") == "1"
+then
+	ui_print("  >>> 03_定制开屏图片 ...");
+#	package_extract_dir("Customize/01_OptionalApp/03_Font/data", "/data");
+#	run_program("/sbin/sleep", "0.2");
+endif;
+set_progress(0.844);
+if
+	file_getprop("/tmp/aroma-data/EDUOptionalApp.prop","item.1.4") == "1"
+then
+	ui_print("  >>> 04_安装101桌面 ...");
+	package_extract_dir("EDUpatch/EDUOptionalApp/NDsmarthome/system", "/system");
+	package_extract_dir("EDUpatch/EDUOptionalApp/NDsmarthome/sdcard", "/data/media/0");
+	delete_recursive("/system/priv-app/TouchWizHome_2016");	
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+if
+	file_getprop("/tmp/aroma-data/EDUOptionalApp.prop","item.1.5") == "1"
+then
+	ui_print("  >>> 05_ND智能相机 ...");
+	package_extract_dir("EDUpatch/EDUOptionalApp/NDsmartcamera/system", "/system");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+if
+	file_getprop("/tmp/aroma-data/EDUOptionalApp.prop","item.1.6") == "1"
+then
+	ui_print("  >>> 06_安装NDSSDK ...");
+	package_extract_dir("EDUpatch/EDUOptionalApp/NDssdk/system", "/system");
+	delete_recursive("/system/framework/apache-xml.jar");
+	package_extract_dir("EDUpatch/EDUOptionalApp/NDssdk/ssdkjar", "/system/framework");	
+	set_metadata("/system/framework/apache-xml.jar", "uid", 0, "gid", 0, "mode", 0644, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+	run_program("/sbin/sleep", "0.2");
+endif;
+
+set_progress(0.850);
+
+#################################################################################
+############################六，安装可选美化项目#################################
+##严灿林修改
+#ui_print("@  >>> 安装可选美化项目 ...");
+#	delete_recursive("/data/tmp");
+#	delete_recursive("/data/vrtheme-backup");
+#	package_extract_dir("tomato/vrtheme", "/data/tmp/vrtheme");
+#	set_perm(0, 0, 0755, "/data/tmp/vrtheme/installtheme.sh");
+#	set_perm(0, 0, 0755, "/data/tmp/vrtheme/zip");
+#	set_perm(0, 0, 0755, "/data/tmp/vrtheme/zipalign");
+#	run_program("/sbin/sleep", "0.2");
+#set_progress(0.90);
+
+
+		
+if
+	file_getprop("/tmp/aroma-data/Delete.prop","item.1.1") == "1"
+then
+	ui_print("  >>> 精简文件中 ...");
+#CMAWEATHER
+    	#delete_recursive("/system/app/CMAWeatherPhone2015");
+    	#delete_recursive("/system/app/WeatherDaemon2015");
+		
+#HealthService
+    	#delete_recursive("/system/priv-app/HealthService");
+    	#delete_recursive("/system/priv-app/SHealth4");
+		
+# test
+    	#delete_recursive("/system/priv-app/HwModuleTest");
+		
+#Samsungservice2
+    	#delete_recursive("/system/priv-app/Samsungservice2_xxxhdpi_zero");
+    	#delete_recursive("/system/priv-app/SPPPushClient_Prod");
+		
+#GalaxyApps_3xh
+    	#delete_recursive("/system/priv-app/SamsungBilling");
+    	#delete_recursive("/system/priv-app/GalaxyApps_3xh_zero");
+    	#delete_recursive("/system/app/GalaxyAppsWidget_Phone");
+ 
+#权限管理		
+    	#delete_recursive("/system/app/AASAservice");  #权限管理服务
+    	#delete_recursive("/system/app/ApplicationPermissions"); #权限管理
+
+#多窗口
+    	#delete_recursive("/system/app/MultiWindowTrayService2"); #多窗口
+		
+#浮动信息
+    	#delete_recursive("/system/priv-app/AirMessage");
+    	#delete_recursive("/system/priv-app/AirMessageProxy");
+
+#指纹
+    	#delete_recursive("/system/priv-app/FingerprintService2"); 
+
+#超级省电
+    	#delete_recursive("/system/app/EmergencyLauncher");#紧急模式
+    	#delete_recursive("/system/app/EmergencyModeService");#紧急模式
+    	#delete_recursive("/system/app/EmergencyProvider");#紧急模式		
+		
+#曲面
+     	#delete_recursive("/system/app/CatchFavorites_L"); #
+    	#delete_recursive("/system/priv-app/CocktailBarService");
+    	#delete_recursive("/system/priv-app/EdgeService");
+    	#delete_recursive("/system/priv-app/PeopleStripe");
+		
+#kies		
+    	#delete_recursive("/system/priv-app/Kies");
+    	#delete_recursive("/system/priv-app/SmartSwitchAgent"); #旧手机资料转移
+    	#delete_recursive("/system/priv-app/wssyncmlnps2");#备份还原程序
+
+#EasySidePanel		
+    	delete_recursive("/system/app/EasySidePanel");
+
+    	delete_recursive("/system/app/AdvSoundDetector2015");  #音效控制
+    	delete_recursive("/system/app/AssistantMenu_M"); #助理菜单
+    	delete_recursive("/system/app/atfwd");  
+    	delete_recursive("/system/app/AutoLogin_L_M");  #中国电信注册设备
+    	delete_recursive("/system/app/BeaconManager_20");#快速链接
+    	delete_recursive("/system/app/BasicDreams");#基本互动屏保
+    	delete_recursive("/system/app/BeamService"); #快速链接
+    	delete_recursive("/system/app/CloudGateway"); #云
+    	delete_recursive("/system/app/ColorBlind_M"); #色彩调整
+    	delete_recursive("/system/app/CoreApps"); #三星账户的一些共享类
+    	delete_recursive("/system/app/DRParser");  
+    	delete_recursive("/system/app/EdmSimPinService"); 
+    	delete_recursive("/system/app/FestivalChinaDefault");  
+    	delete_recursive("/system/app/FlipboardBriefing"); #简报
+    	delete_recursive("/system/app/GreetingCard_M_UPD");#贺卡
+    	delete_recursive("/system/app/HighlightPlayer_Hero"); #高亮显示视频播放器
+    	delete_recursive("/system/app/Hs20Provider"); #高亮显示视频播放器
+    	delete_recursive("/system/app/ImsTelephonyService"); #ip多媒体子系统服务
+    	delete_recursive("/system/app/KeyguardWallpaperUpdator"); #我的兴趣插件
+    	delete_recursive("/system/app/MDMApp"); #移动数据管理
+    	delete_recursive("/system/app/minimode-res"); 
+    	delete_recursive("/system/app/MobileTrackerEngineTwo"); #移动追踪
+    	delete_recursive("/system/app/MyEventWidget_M"); #事件窗口部件
+    	delete_recursive("/system/app/PDFViewer"); 
+    	delete_recursive("/system/app/Personalization"); 
+    	delete_recursive("/system/app/PopupuiReceiver");
+    	delete_recursive("/system/app/PhotoTable");#照片墙
+    	delete_recursive("/system/app/Preconfig");	
+    	delete_recursive("/system/app/QuickConnect_40"); #快速连接
+    	delete_recursive("/system/app/QuickConnectBridge"); 
+    	delete_recursive("/system/app/RootPA");
+    	delete_recursive("/system/app/SamsungContentsAgent"); #主题框架
+    	delete_recursive("/system/app/SamsungDLPService"); 
+    	delete_recursive("/system/app/SamsungSyncAdapter365"); #365日历
+    	delete_recursive("/system/app/SapaAudioConnectionService");  
+    	delete_recursive("/system/app/SapaMonitor"); #屏幕共享
+    	delete_recursive("/system/app/SCPMClient");  
+    	delete_recursive("/system/app/SearchBoxBaidu_OPEN"); #百度
+    	delete_recursive("/system/app/SecFactoryPhoneTest");  
+    	delete_recursive("/system/app/SecurityManagerService");  
+    	delete_recursive("/system/app/SecurityProviderSEC"); #安全存储服务
+    	delete_recursive("/system/app/SilentLog"); #静音
+    	#delete_recursive("/system/app/SmartcardService"); #智能卡
+    	#delete_recursive("/system/app/SLocation");  
+    	delete_recursive("/system/app/SmartRemote_zero_China"); #peel
+    	delete_recursive("/system/app/SmartSwitchAgent");	 
+    	delete_recursive("/system/app/SnsImageCache"); 
+    	delete_recursive("/system/app/SysScope"); 
+    	delete_recursive("/system/app/TuiService");  
+    	delete_recursive("/system/app/UniversalSwitch"); 
+    	delete_recursive("/system/app/VideoEditorLite_Hero");
+    	delete_recursive("/system/app/WebManual");
+    	delete_recursive("/system/app/withTV");
+		
+		delete_recursive("/system/app/SamsungCamera4");
+    	delete_recursive("/system/priv-app/AccessControl_M");
+    	delete_recursive("/system/priv-app/AuthService");
+    	delete_recursive("/system/priv-app/AutomationTest_FB");
+    	delete_recursive("/system/priv-app/AutoPreconfig");
+    	delete_recursive("/system/priv-app/BstSpamCallService");
+    	delete_recursive("/system/priv-app/CallLogBackup");
+    	delete_recursive("/system/priv-app/CloudAgentAli_M");
+    	delete_recursive("/system/priv-app/CMHProvider"); 
+    	delete_recursive("/system/priv-app/ContextProvider"); 
+    	delete_recursive("/system/priv-app/DCMProvider"); 
+    	delete_recursive("/system/priv-app/DCMService"); 
+    	delete_recursive("/system/priv-app/DeviceKeystring");
+    	delete_recursive("/system/priv-app/DeviceTest");  
+    	delete_recursive("/system/priv-app/DiagMonAgent"); 
+    	delete_recursive("/system/priv-app/EnhanceService"); 	
+    	delete_recursive("/system/priv-app/EventCenter"); 
+    	delete_recursive("/system/priv-app/Hearingdro_V5");
+    	delete_recursive("/system/priv-app/intelligenceservice"); 
+    	delete_recursive("/system/priv-app/intelligenceservice2"); 
+    	delete_recursive("/system/priv-app/IPService"); 
+    	delete_recursive("/system/priv-app/KeyguardWallpaperUpdator"); 
+    	delete_recursive("/system/priv-app/OneTimeInitializer");
+    	delete_recursive("/system/priv-app/PhoneErrService"); 
+    	delete_recursive("/system/priv-app/ringtoneBR"); 
+    	delete_recursive("/system/priv-app/SecLiveWallpapersPicker"); 
+    	delete_recursive("/system/priv-app/SendHelpMessage"); 
+    	delete_recursive("/system/priv-app/serviceModeApp_FB"); 
+    	delete_recursive("/system/priv-app/ServiceModeApp_RIL");  
+    	delete_recursive("/system/priv-app/SKMSAgent");  
+    	delete_recursive("/system/priv-app/SNS_v2");
+    	delete_recursive("/system/priv-app/StatementService");  
+    	delete_recursive("/system/priv-app/StoryService"); 
+    	delete_recursive("/system/priv-app/UcsPinpad"); 
+    	delete_recursive("/system/priv-app/UIBCVirtualSoftkey"); 
+    	delete_recursive("/system/priv-app/VRSetupWizardStub"); 
+    	delete_recursive("/system/priv-app/wssyncmlnps2"); 
+	
+    	run_program("/sbin/sleep", "1.5");
+
+endif;	
+
+set_progress(0.92);
+######################################################
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.1") == "1"
+then	
+	ui_print("  >>> 删除 01_三星账号  ...");	
+	#Samsungservice2---1
+	delete_recursive("/system/priv-app/SamsungAccount_Hero");
+	delete_recursive("/system/priv-app/SPPPushClient_Prod");
+	run_program("/sbin/sleep", "0.2");
+endif;	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.2") == "1"
+then	
+	ui_print("  >>> 删除 02_三星商店  ...");	
+	#GalaxyApps_3xh---2
+	delete_recursive("/system/priv-app/SamsungBilling");
+	delete_recursive("/system/priv-app/GalaxyApps_3xh_zero");
+	delete_recursive("/system/app/GalaxyAppsWidget_Phone");
+	run_program("/sbin/sleep", "0.2");
+endif;	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.3") == "1"
+then	
+	ui_print("  >>> 删除 03_三星主题商店  ...");	
+ 	#ThemeCenter---3
+	delete_recursive("/system/priv-app/ThemeCenter");
+	delete_recursive("/system/priv-app/ThemeStore_3xh");
+	run_program("/sbin/sleep", "0.2");
+endif;	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.4") == "1"
+then	
+	ui_print("  >>> 删除 04_三星智能管理器  ...");	
+	#SmartManager---4
+	delete_recursive("/system/app/AASAservice");  #权限管理服务
+	delete_recursive("/system/priv-app/SmartManager_v3");
+	delete_recursive("/system/priv-app/SmartManager_v3_DeviceSecurity");		
+	delete_recursive("/system/priv-app/SmartManagerProvider");		
+	delete_recursive("/system/priv-app/SmartManagerSDK");		
+	run_program("/sbin/sleep", "0.2");
+endif;	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.5") == "1"
+then	
+	ui_print("  >>> 删除 05_S健康  ...");	
+	#HealthService---5
+	delete_recursive("/system/priv-app/SHealth4");
+	delete_recursive("/system/priv-app/HealthService");
+	run_program("/sbin/sleep", "0.2");
+endif;	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.6") == "1"
+then	
+	ui_print("  >>> 删除 06_浮动信息  ...");	
+	#浮动信息---6
+	delete_recursive("/system/priv-app/AirMessage");
+	delete_recursive("/system/priv-app/AirMessageProxy");
+	run_program("/sbin/sleep", "0.2");
+endif;	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.7") == "1"
+then	
+	ui_print("  >>> 删除 07_文件管理  ...");	
+	#myfile---7
+	delete_recursive("/system/priv-app/SecMyFiles");  
+endif;	
+
+	
+#####################################################################
+########################EDU定制深度精简模式###############################
+	
+if
+	file_getprop("/tmp/aroma-data/Deletelite.prop","item.1.8") == "1"
+then	
+	ui_print("  >>> 删除 08_EDU定制深度精简模式 ...");
+	delete_recursive("/system/app/AASAservice");
+	delete_recursive("/system/app/AccessControl");
+	delete_recursive("/system/app/AdvSoundDetector2015");
+	delete_recursive("/system/app/AirWakeUp");
+	delete_recursive("/system/app/ApplicationPermissions");
+	delete_recursive("/system/app/AppLinker");
+	delete_recursive("/system/app/appsearch");
+	delete_recursive("/system/app/AssistantMenu2_ZERO");
+	delete_recursive("/system/app/AutoLogin_L_M");
+	delete_recursive("/system/app/baidubrowser");
+	delete_recursive("/system/app/BasicDreams");
+	delete_recursive("/system/app/BeamService");
+	delete_recursive("/system/app/CaptivePortalLogin");
+	delete_recursive("/system/app/ChinaHolidayProvider");
+	delete_recursive("/system/app/ClockPackage_M_Osup");
+	delete_recursive("/system/app/CMAWeatherPhone2015");
+	delete_recursive("/system/app/cn.opda.a.phonoalbumshoushou");
+	delete_recursive("/system/app/DigitalClock_L");
+	delete_recursive("/system/app/DigitalClockEasy_L");
+	delete_recursive("/system/app/FactoryCamera_FB");
+	delete_recursive("/system/app/FBMessenger_stub");
+	delete_recursive("/system/app/FestivalChinaDefault");
+	delete_recursive("/system/app/FidoUafClient");
+	delete_recursive("/system/app/FilterInstaller");
+	delete_recursive("/system/app/FilterProvider");
+	delete_recursive("/system/app/GearManagerStub");
+	delete_recursive("/system/app/InteractivePanoramaViewer_WQHD");
+	delete_recursive("/system/app/Kaiti");
+	delete_recursive("/system/app/KeyguardWallpaperUpdator");
+	delete_recursive("/system/app/MediaConverter_Trim_standalone");
+	delete_recursive("/system/app/Miao");
+	delete_recursive("/system/app/minimode-res");
+	delete_recursive("/system/app/MobileTrackerEngineTwo");
+	delete_recursive("/system/app/Panorama360Viewer_Zero");
+	delete_recursive("/system/app/QuickConnect_20");
+	delete_recursive("/system/app/ResourceManager");
+	delete_recursive("/system/app/SamsungChineseIMEv9");
+	delete_recursive("/system/app/SBrowser_4_LATEST");
+	delete_recursive("/system/app/SecFactoryPhoneTest");
+	delete_recursive("/system/app/ShaoNv");
+	delete_recursive("/system/app/SharingAccessibilitySettings_L");
+	delete_recursive("/system/app/SimCardMgr");
+	delete_recursive("/system/app/SlowMotion_Zero");
+	delete_recursive("/system/app/SogouMall");
+	delete_recursive("/system/app/SPlanner_M");
+	delete_recursive("/system/app/SPlannerWidget_Material");
+	delete_recursive("/system/app/SplitSoundService");
+	delete_recursive("/system/app/Stk");
+	delete_recursive("/system/app/Stk2");
+	delete_recursive("/system/app/UniversalSwitch");
+	delete_recursive("/system/app/Utk_Chn");
+	delete_recursive("/system/app/Utk_Chn2");
+	delete_recursive("/system/app/WeatherDaemon2015");
+	delete_recursive("/system/app/WebManual");
+	delete_recursive("/system/app/WlanTest");
+	delete_recursive("/system/app/ydzx");
+	delete_recursive("/system/app/VideoCollage_Hero");
+	
+	delete_recursive("/system/priv-app/SamsungCamera4");
+	delete_recursive("/system/priv-app/ShootingModeProvider");
+	delete_recursive("/system/priv-app/YellowPage");
+	delete_recursive("/system/priv-app/AirMessage");
+	delete_recursive("/system/priv-app/AirMessageProxy");
+	delete_recursive("/system/priv-app/AutomationTest_FB");
+	delete_recursive("/system/priv-app/CloudAgent");
+	delete_recursive("/system/priv-app/EasyLauncher2_Zero");
+	delete_recursive("/system/priv-app/EventCenter");
+	delete_recursive("/system/priv-app/GearManager");
+	delete_recursive("/system/priv-app/GlobalNetworkLocation_Baidu");
+	delete_recursive("/system/priv-app/HealthService");
+	delete_recursive("/system/priv-app/Hearingdro_V4");
+	delete_recursive("/system/priv-app/HwModuleTest");
+	delete_recursive("/system/priv-app/OutOfFocusViewer_WQHD_K");
+	delete_recursive("/system/priv-app/PCWClientS18");
+	delete_recursive("/system/priv-app/PersonalPageService");
+	delete_recursive("/system/priv-app/PhotoStudio_WQHD_Zero");
+	delete_recursive("/system/priv-app/ProxyHandler");
+	delete_recursive("/system/priv-app/SamsungMagnifier2");
+	delete_recursive("/system/priv-app/Samsungservice2_xxxhdpi_zero");
+	delete_recursive("/system/priv-app/SAssistant_2");
+	delete_recursive("/system/priv-app/SBrowserProviderProxy_PRELOAD");
+	delete_recursive("/system/priv-app/SecCalendarProvider_NOTSTICKER");
+	delete_recursive("/system/priv-app/SecContacts_L_Phone_FLAGSHIP_CHN");
+	delete_recursive("/system/priv-app/SecContactsProvider");
+	delete_recursive("/system/priv-app/SecDownloadProvider");
+	delete_recursive("/system/priv-app/SecEmailComposer");
+	delete_recursive("/system/priv-app/SecEmailProvider");
+	delete_recursive("/system/priv-app/SecEmailSync");
+	delete_recursive("/system/priv-app/SecEmailUI");
+	delete_recursive("/system/priv-app/SecGallery2015");
+	delete_recursive("/system/priv-app/SecMms_Delight_Chn");
+	delete_recursive("/system/priv-app/SecMms_Epic_Chn");
+	delete_recursive("/system/priv-app/SecMyFiles2015");
+	delete_recursive("/system/priv-app/SHealth4_3");
+	delete_recursive("/system/priv-app/SmartManager");
+	delete_recursive("/system/priv-app/SmartManagerSDK");
+	delete_recursive("/system/priv-app/SmartSelfShot");
+	delete_recursive("/system/priv-app/SMCore");
+	delete_recursive("/system/priv-app/SMusic");
+	delete_recursive("/system/priv-app/SPPPushClient_Prod");
+	delete_recursive("/system/priv-app/ThemeCenter");
+	delete_recursive("/system/priv-app/ThemeStore_3xh");
+	delete_recursive("/system/priv-app/VoiceWakeUp");
+	delete_recursive("/system/priv-app/VideoTrimmer");
+	delete_recursive("/system/priv-app/SecContacts_M");
+	delete_recursive("/system/priv-app/VoiceNote_4.0");
+	delete_recursive("/system/priv-app/SecCalculator_M");
+	delete_recursive("/system/priv-app/SamsungVideoPlayer");
+	delete_recursive("/system/priv-app/SamsungOnlineVideo");
+	delete_recursive("/system/priv-app/CleanMaster");
+	
+endif;	
+	
+	
+#####################################################################
+#####################################################################
+##严灿林修改
+#set_progress(0.95);
+#ui_print("  >>> 正在 美化文件中 ...");
+#	run_program("/data/tmp/vrtheme/installtheme.sh");
+#	run_program("/sbin/sleep", "1s");	
+
+#复制美化文件	
+#	run_program("/tmp/copy.sh");
+#	run_program("/sbin/sleep", "1.5");
+#	delete_recursive("/system/priv-app/SystemUI_3mini");
+	
+#	delete("/sdcard/vrtheme_restore.zip");
+#set_progress(0.96);
+
+ui_print("@  >>> 优化系统 ...");
+
+#BUILD TWEAKS
+ui_print("  >>> 正在 执行 build 优化项目...");
+	package_extract_file("tomato/optimize/build.sh", "/tmp/build.sh");
+	set_perm(0, 0, 0755, "/tmp/build.sh");
+	run_program("/tmp/build.sh");
+	run_program("/sbin/sleep", "0.5");	
+
+#add_initd	
+ui_print("  >>> 正在 添加 init.d 支持...");
+	package_extract_file("tomato/optimize/add_initd.sh", "/tmp/add_initd.sh");
+	set_perm(0, 0, 0755, "/tmp/add_initd.sh");
+	run_program("/tmp/add_initd.sh");
+	run_program("/sbin/sleep", "0.5");	
+	
+#ext4
+ui_print("  >>> 正在 优化ext4...");
+	package_extract_file("tomato/optimize/ext4/ext4", "/tmp/ext4");
+	package_extract_file("tomato/optimize/ext4/tune2fs", "/tmp/tune2fs");
+	set_perm(0, 0, 0777, "/tmp/ext4");
+	set_perm(0, 0, 0777, "/tmp/tune2fs");
+	run_program("/tmp/ext4");
+	run_program("/sbin/sleep", "0.5");	
+	
+	#fstrim	
+	package_extract_file("tomato/optimize/fstrim/fstrim", "/tmp/fstrim");
+	set_perm(0, 0, 0777, "/tmp/fstrim");
+	run_program("/tmp/fstrim", "-v", "/system");
+	run_program("/tmp/fstrim", "-v", "/data");
+	run_program("/sbin/sleep", "0.5");	
+
+	#sqlite3
+	package_extract_dir("tomato/optimize/sqlite3", "/system");
+	set_perm(0, 2000, 0755, "/system/xbin/sqlite3");
+	set_perm(0, 2000, 0755, "/system/etc/init.d/99sqlite");
+	run_program("/sbin/sleep", "0.5");	
+	
+#extratoggles
+#ui_print("  >>> 正在 激活下拉按钮...");
+#	package_extract_dir("tomato/extratoggles/etc", "/system/etc");
+#	package_extract_file("tomato/extratoggles/add_extratoggles.sh", "/tmp/add_extratoggles.sh");
+#	set_metadata("/tmp/add_extratoggles.sh", "uid", 0, "gid", 0, "mode", 0777);
+#	run_program("/tmp/add_extratoggles.sh");
+#	delete("/tmp/add_extratoggles.sh");
+
+#if
+#	file_getprop("/tmp/aroma-data/Delete.prop","item.1.1") == "1"
+#then	
+#	#extratoggles-lite
+#	ui_print("  >>> 正在 激活下拉按钮精简版...");
+#	delete("/system/etc/tools/run.sh");
+#	package_extract_file("tomato/extratoggles/lite/run.sh", "/system/etc/tools/run.sh");
+#	package_extract_file("tomato/extratoggles/lite/others.xml", "/system/csc/others.xml");
+#endif;		
+#	run_program("/sbin/sleep", "0.5");	
+
+
+#####################################################################
+####Tomato tweaks
+#####################################################################
+set_progress(0.97);
+#KERNEL
+ui_print("@  >>> 安装 内核 ...");
+ui_print("  >>> 正在 刷入内核 ...");
+    package_extract_file("tomato/Kernel/boot.img", "/dev/block/platform/15570000.ufs/by-name/BOOT");
+    #package_extract_file("tomato/Kernel/boot.img", "/dev/block/sda8");
+	run_program("/sbin/sleep", "1s");	
+
+#RECOVERY
+ui_print("  >>> 正在 刷入TWRP ...");
+    package_extract_file("tomato/Kernel/recovery.img", "/dev/block/platform/15570000.ufs/by-name/RECOVERY");
+    #package_extract_file("tomato/Kernel/recovery.img", "/dev/block/sda9");
+	run_program("/sbin/sleep", "1s");	
+	
+#####################################################################
+
+
+set_progress(0.99);
+ui_print("@  >>> 安装完成 ...");
+
+delete_recursive("/tmp");
+delete_recursive("/data/tmp");
+delete_recursive("/cache");
+delete_recursive("/data/dalvik-cache");
+
+unmount("/system");
+unmount("/preload");
+unmount("/cache");
+unmount("/data");
+unmount("/sdcard");
+	
+ui_print("");
+set_progress(1.0);
+
+run_program("/sbin/reboot", "fota_bl");
+#run_program("/sbin/reboot");

@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<package-restrictions>
+<pkg name="com.sec.everglades.update" stopped="true" nl="true" />
+<pkg name="com.google.android.gms">
+<disabled-components>
+<item name="com.google.android.gms.analytics.service.AnalyticsService" />
+</disabled-components>
+</pkg>
+<pkg name="com.android.settings">
+<disabled-components>
+<item name="com.android.settings.CryptKeeper" />
+</disabled-components>
+</pkg>
+<pkg name="com.sec.android.app.SecSetupWizard">
+<disabled-components>
+<item name="com.sec.android.app.SecSetupWizard.SecSetupWizardActivity" />
+</disabled-components>
+</pkg>
+<pkg name="com.android.email">
+<enabled-components>
+<item name="com.android.email.activity.MessageCompose" />
+</enabled-components>
+<disabled-components>
+<item name="com.seven.Z7.authenticator.Z7SyncAdapterService$CalendarSyncAdapterServiceYahoo" />
+<item name="com.seven.Z7.authenticator.Z7AccountAuthenticatorService$YahooAuthenticatorService" />
+<item name="com.android.email.service.AttachmentDownloadService" />
+<item name="com.seven.Z7.authenticator.Z7AccountAuthenticatorService$MSNAuthenticatorService" />
+<item name="com.android.email.activity.AccountShortcutPicker" />
+<item name="com.seven.Z7.authenticator.Z7SyncAdapterService$ContactsSyncAdapterServiceYahoo" />
+<item name="com.android.email.service.MailService" />
+<item name="com.seven.Z7.authenticator.Z7SyncAdapterService$ContactsSyncAdapterServiceMSN" />
+</disabled-components>
+</pkg>
+<pkg name="com.google.android.apps.maps" enabled="1" />
+<pkg name="com.android.musicfx">
+<enabled-components>
+<item name="com.android.musicfx.ControlPanelReceiver" />
+</enabled-components>
+</pkg>
+<pkg name="com.google.android.partnersetup">
+<disabled-components>
+<item name="com.google.android.partnersetup.PhoneStateReceiver" />
+</disabled-components>
+</pkg>
+<pkg name="com.android.vending" enabled="1">
+<enabled-components>
+<item name="com.google.android.finsky.receivers.BootCompletedReceiver" />
+<item name="com.android.vending.AssetBrowserActivity" />
+<item name="com.google.android.finsky.receivers.AccountsChangedReceiver" />
+<item name="com.google.android.finsky.receivers.PackageMonitorReceiver$RegisteredReceiver" />
+</enabled-components>
+</pkg>
+<pkg name="com.google.android.gm">
+<enabled-components>
+<item name="com.google.android.gm.ComposeActivityGmail" />
+<item name="com.google.android.gm.CreateShortcutActivityGmail" />
+<item name="com.google.android.gm.widget.GmailWidgetProvider" />
+</enabled-components>
+<disabled-components>
+<item name="com.google.android.gm.CreateShortcutActivityGoogleMail" />
+<item name="com.google.android.gm.widget.GoogleMailWidgetProvider" />
+</disabled-components>
+</pkg>
+<pkg name="com.google.android.gsf">
+<disabled-components>
+<item name="com.google.android.gsf.loginservice.MigrateToAccountManagerBroadcastReceiver" />
+</disabled-components>
+</pkg>
+<preferred-activities>
+<item name="com.sec.android.app.launcher/com.android.launcher2.Launcher" match="100000" set="2">
+<set name="com.sec.android.app.easylauncher/.Launcher" />
+<set name="com.sec.android.app.launcher/com.android.launcher2.Launcher" />
+<filter>
+<action name="android.intent.action.MAIN" />
+<cat name="android.intent.category.HOME" />
+<cat name="android.intent.category.DEFAULT" />
+<cat name="android.intent.category.MONKEY" />
+</filter>
+</item>
+</preferred-activities>
+</package-restrictions>
